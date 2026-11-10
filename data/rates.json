@@ -1,0 +1,89 @@
+{
+  "indices": {
+    "labor": 45.0,
+    "machines": 14.0,
+    "materials": 9.0
+  },
+  "nrPercent": 10.0,
+  "spPercent": 5.0,
+  "workerRate": 450,
+  "machinistRate": 700,
+  "foremanPercent": 15,
+  "baseMachinistRate": 11.0,
+  "minMachineHours": 4,
+  "insurancePercent": 30.2,
+  "useRentalInTotal": false,
+  "shiftHours": 8,
+  "machines": [
+    {
+      "id": "excavator",
+      "name": "Экскаватор гусеничный, ковш 0,4 м³",
+      "rate": 2800,
+      "operatorRate": 700,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "bulldozer",
+      "name": "Бульдозер 59 кВт (80 л.с.)",
+      "rate": 2200,
+      "operatorRate": 650,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "roller",
+      "name": "Каток прицепной пневмоколёсный 25 т",
+      "rate": 1800,
+      "operatorRate": 600,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "crane",
+      "name": "Автокран 25 т",
+      "rate": 3000,
+      "operatorRate": 750,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "concrete_pump",
+      "name": "Бетононасос",
+      "rate": 3500,
+      "operatorRate": 800,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "hoist",
+      "name": "Подъёмник (лебёдка)",
+      "rate": 1000,
+      "operatorRate": 500,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "concrete_mixer",
+      "name": "Бетоносмеситель",
+      "rate": 700,
+      "operatorRate": 450,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "welding",
+      "name": "Сварочный агрегат",
+      "rate": 600,
+      "operatorRate": 450,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "compressor",
+      "name": "Компрессор",
+      "rate": 800,
+      "operatorRate": 500,
+      "note": "Аренда от 4 маш.-ч"
+    },
+    {
+      "id": "bitumen",
+      "name": "Котёл битумный",
+      "rate": 900,
+      "operatorRate": 500,
+      "note": "Аренда от 4 маш.-ч"
+    }
+  ]
+}

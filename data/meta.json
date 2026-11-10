@@ -1,0 +1,57 @@
+{
+  "updatedAt": "2026-11-10",
+  "title": "Смета типовой КНС — официальные расценки ФЕР-2001",
+  "note": "Сборники 1, 6, 7, 8, 11, 12, 15 — редакция Приказа Минстроя № 876/пр (ред. 14.10.2021). Сборники 16 и 23 — официальная редакция ФЕР-2001 (2001 г.) с rags.ru.",
+  "sources": [
+    {
+      "collection": "Сборник 1. Земляные работы",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_59844.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 6. Монолитные конструкции",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_23880.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 7. Сборные конструкции",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_38670.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 8. Кирпич и блоки",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_45625.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 11. Полы",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_35323.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 12. Кровли",
+      "url": "https://rags.ru/documents/prod/prikaz/8/fer_74499.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 15. Отделочные работы",
+      "url": "https://rags.ru/documents/prod/normativy/0/fer-2_84275.html",
+      "edition": "Приказ Минстроя № 876/пр (ред. 14.10.2021)"
+    },
+    {
+      "collection": "Сборник 16. Трубопроводы внутренние",
+      "url": "https://rags.ru/documents/prod/postanovlenie/21/fer-2_31697.html",
+      "edition": "ФЕР-2001, официальная редакция 2001 г."
+    },
+    {
+      "collection": "Сборник 23. Канализация — наружные сети",
+      "url": "https://rags.ru/documents/prod/postanovlenie/21/fer-2_99990.html",
+      "edition": "ФЕР-2001, официальная редакция 2001 г."
+    },
+    {
+      "collection": "ФГИС ЦС — федеральный реестр сметных нормативов",
+      "url": "https://fgiscs.minstroyrf.ru/frsn/fsnb",
+      "edition": "Официальный реестр Минстроя России"
+    }
+  ]
+}

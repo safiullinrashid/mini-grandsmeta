@@ -3,201 +3,545 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мини-ГрандСмета — локальная смета на 9-этажное здание</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232C3E50'/%3E%3Ctext x='16' y='22' font-size='14' font-family='Arial' fill='%23fff' text-anchor='middle' font-weight='bold'%3EС%3C/text%3E%3C/svg%3E">
+  <title>Мини-ГрандСмета — смета типовой КНС</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f6f5c'/%3E%3Ctext x='16' y='22' font-size='14' font-family='Arial' fill='%23fff' text-anchor='middle' font-weight='bold'%3EК%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <header class="app-header">
-    <div class="header-inner">
-      <h1>Локальная смета на 9-этажное здание</h1>
-      <div class="toolbar">
-        <div class="toolbar-group">
-          <button id="btn-add-work" class="btn btn-primary">+ Добавить работу</button>
-          <button id="btn-open-directory" class="btn">Справочник работ</button>
-          <button id="btn-add-coeff" class="btn">Коэффициенты</button>
-        </div>
-        <div class="toolbar-group">
-          <button id="btn-save-project" class="btn">Скачать проект (JSON)</button>
-          <button id="btn-load-project" class="btn">Загрузить проект</button>
-          <input type="file" id="file-load-project" accept=".json" hidden>
-          <button id="btn-export-xlsx" class="btn btn-primary">Скачать Excel</button>
-          <button id="btn-export-csv" class="btn">Скачать CSV</button>
-          <button id="btn-print" class="btn">Печать</button>
-        </div>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <h1>Мини-ГрандСмета — типовая КНС</h1>
+        <p class="header-sub">Работы от котлована до отделки · официальные расценки ФЕР-2001 · <span id="meta-updated">данные загружаются…</span></p>
+      </div>
+      <div class="header-badge">КНС · ФЕР</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button id="btn-add-work" class="btn btn-primary">+ Добавить работу</button>
+        <button id="btn-directory" class="btn">Справочник работ</button>
+        <button id="btn-resources" class="btn">Цены и ресурсы</button>
+        <button id="btn-refresh" class="btn">↻ Обновить данные</button>
+      </div>
+      <div class="toolbar-group">
+        <button id="btn-export-xlsx" class="btn btn-ghost">Excel</button>
+        <button id="btn-export-csv" class="btn btn-ghost">CSV</button>
+        <button id="btn-save-json" class="btn btn-ghost">Сохранить проект</button>
+        <button id="btn-load-json" class="btn btn-ghost">Загрузить проект</button>
+        <button id="btn-print" class="btn btn-ghost">Печать</button>
+        <button id="btn-clear" class="btn btn-danger-ghost">Очистить</button>
+        <input type="file" id="load-json-file" accept=".json,application/json" hidden>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <main class="container">
+<main class="app-main">
 
-    <section class="card table-card">
-      <div class="table-scroll">
-        <table id="estimate-table" class="estimate">
-          <thead>
-            <tr>
-              <th class="col-idx">№</th>
-              <th class="col-code">Шифр</th>
-              <th class="col-name">Наименование работ</th>
-              <th class="col-unit">Ед. изм.</th>
-              <th class="col-volume">Объём</th>
-              <th class="col-norm">Норма<span class="sub">чел.-ч</span><span class="sub manual">ручн.</span></th>
-              <th class="col-coeff">Коэфф.</th>
-              <th class="col-hours">Итого чел.-ч</th>
-              <th class="col-price">Цена<span class="sub">₽</span><span class="sub manual">ручн.</span></th>
-              <th class="col-total">Стоимость</th>
-              <th class="col-del"></th>
-            </tr>
-          </thead>
-          <tbody id="estimate-body"></tbody>
-        </table>
+  <!-- ===================== СВОДКА ===================== -->
+  <section class="cards-grid" aria-label="Сводка по смете">
+    <article class="stat-card stat-card-main">
+      <div class="stat-label">Стоимость работ по смете</div>
+      <div class="stat-value" id="sum-cost">0 ₽</div>
+      <div class="stat-hint" id="sum-cost-hint">Прямые затраты + НР + СП</div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-label">Фонд оплаты труда (ФОТ)</div>
+      <div class="stat-value" id="sum-payroll">0 ₽</div>
+      <div class="stat-hint">Рабочие + машинисты + прораб</div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-label">Трудозатраты</div>
+      <div class="stat-value" id="sum-labor">0 чел.-ч</div>
+      <div class="stat-hint" id="sum-labor-hint">0 смен по 8 ч</div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-label">Машино-часы</div>
+      <div class="stat-value" id="sum-machine">0 маш.-ч</div>
+      <div class="stat-hint" id="sum-machine-hint">к оплате с учётом минимума 4 ч</div>
+    </article>
+  </section>
+
+  <!-- ===================== ЗАРПЛАТЫ И СРОК ===================== -->
+  <section class="two-col">
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Зарплаты по ролям</h2>
+        <span class="panel-sub">ставки редактируются в «Цены и ресурсы»</span>
       </div>
-      <p id="empty-hint" class="empty-hint">Смета пуста. Нажмите «+ Добавить работу».</p>
-    </section>
-
-    <div class="bottom-grid">
-      <section class="card totals-card">
-        <h2>Итоги</h2>
-        <div class="totals-row">
-          <div class="total-box">
-            <span class="total-label">Всего денег</span>
-            <span id="total-cost" class="total-value">0 ₽</span>
-          </div>
-          <div class="total-box">
-            <span class="total-label">Всего часов</span>
-            <span id="total-hours" class="total-value">0 чел.-ч</span>
-          </div>
+      <div class="roles-grid">
+        <div class="role-card">
+          <div class="role-name">Рабочий</div>
+          <div class="role-value" id="role-worker">0 ₽</div>
+          <div class="role-detail" id="role-worker-detail">0 чел.-ч × 450 ₽</div>
         </div>
-      </section>
+        <div class="role-card">
+          <div class="role-name">Машинист</div>
+          <div class="role-value" id="role-machinist">0 ₽</div>
+          <div class="role-detail" id="role-machinist-detail">0 маш.-ч × 700 ₽</div>
+        </div>
+        <div class="role-card">
+          <div class="role-name">Прораб</div>
+          <div class="role-value" id="role-foreman">0 ₽</div>
+          <div class="role-detail" id="role-foreman-detail">15 % от ФОТ рабочих и машинистов</div>
+        </div>
+        <div class="role-card role-card-muted">
+          <div class="role-name">Страховые взносы</div>
+          <div class="role-value" id="role-insurance">0 ₽</div>
+          <div class="role-detail" id="role-insurance-detail">30,2 % от ФОТ</div>
+        </div>
+      </div>
+      <div class="roles-total">
+        <span>Итого ФОТ с взносами</span>
+        <strong id="role-total">0 ₽</strong>
+      </div>
+    </article>
 
-      <section class="card calc-card">
+    <article class="panel">
+      <div class="panel-head">
         <h2>Срок и численность</h2>
-        <div class="calc-row">
-          <div class="calc-item">
-            <label for="input-deadline">Срок, дней</label>
-            <input id="input-deadline" type="number" min="1" step="1" value="10">
-          </div>
-          <div class="calc-item">
-            <span class="arrow">→</span>
-            <span class="calc-result" id="result-people">—</span>
-            <span class="calc-caption">нужно людей</span>
-          </div>
-          <div class="calc-divider"></div>
-          <div class="calc-item">
-            <label for="input-people">Людей</label>
-            <input id="input-people" type="number" min="1" step="1" value="15">
-          </div>
-          <div class="calc-item">
-            <span class="arrow">→</span>
-            <span class="calc-result" id="result-deadline">—</span>
-            <span class="calc-caption">дней</span>
-          </div>
-          <div class="calc-item">
-            <label for="input-shift">Часов в смене</label>
-            <input id="input-shift" type="number" min="1" max="24" step="1" value="8">
-          </div>
+        <span class="panel-sub">расчёт по трудозатратам сметы</span>
+      </div>
+
+      <div class="segmented" role="group" aria-label="Режим расчёта срока">
+        <label class="segmented-item">
+          <input type="radio" name="sched-mode" value="people" checked>
+          <span>Знаю численность → нужен срок</span>
+        </label>
+        <label class="segmented-item">
+          <input type="radio" name="sched-mode" value="deadline">
+          <span>Знаю срок → нужна численность</span>
+        </label>
+      </div>
+
+      <div class="sched-inputs">
+        <label class="field" id="field-people">
+          <span>Численность бригады, чел.</span>
+          <input type="number" id="sched-people" min="1" step="1" value="8">
+        </label>
+        <label class="field">
+          <span>Смена, ч</span>
+          <input type="number" id="sched-shift" min="1" step="0.5" value="8">
+        </label>
+        <label class="field" id="field-deadline">
+          <span>Срок, рабочих дней</span>
+          <input type="number" id="sched-deadline" min="1" step="1" value="30" disabled>
+        </label>
+      </div>
+
+      <div class="sched-result">
+        <div>
+          <div class="sched-result-label" id="sched-result-label">Срок выполнения</div>
+          <div class="sched-result-value" id="sched-days">—</div>
+        </div>
+        <div>
+          <div class="sched-result-label">Численность</div>
+          <div class="sched-result-value" id="sched-required">—</div>
+        </div>
+        <div>
+          <div class="sched-result-label">Календарный срок</div>
+          <div class="sched-result-value" id="sched-calendar">—</div>
+        </div>
+      </div>
+
+      <p class="formula-note" id="sched-note">
+        Срок = трудозатраты ÷ (численность × смена). Календарный срок учитывает выходные (× 1,4).
+      </p>
+    </article>
+  </section>
+
+  <!-- ===================== ПОЯСНЕНИЯ ===================== -->
+  <section class="two-col two-col-notes">
+    <details class="note-card" open>
+      <summary>Что такое чел.-ч и как он считается</summary>
+      <p><strong>Человеко-час (чел.-ч)</strong> — это один час работы одного человека. Если двое рабочих трудятся 3 часа, это 6 чел.-ч.</p>
+      <p>В смете: <code>чел.-ч = объём ÷ делитель единицы × норма чел.-ч на единицу × коэффициент</code>.</p>
+      <p>Норма берётся из ФЕР. Например, для бетонной подготовки норма 135 чел.-ч на 100 м³. При объёме 8 м³ получится 0,08 × 135 = 10,8 чел.-ч.</p>
+      <p class="muted">Зарплата рабочего = чел.-ч × ставка рабочего (по умолчанию 450 ₽/чел.-ч).</p>
+    </details>
+
+    <details class="note-card" open>
+      <summary>Что такое маш.-ч и почему минимум 4 часа</summary>
+      <p><strong>Машино-час (маш.-ч)</strong> — час работы одной машины. Это не объём в м³ и не количество часов смены.</p>
+      <p>В ФЕР есть оплата труда машиниста на единицу работы. При базовой ставке 11 ₽/чел.-ч: <code>маш.-ч на единицу = оплата машиниста ÷ 11</code>. При необходимости значение можно ввести вручную в карточке работы.</p>
+      <p><strong>Аренда техники</strong> считается по маш.-ч. Минимальный заказ — 4 маш.-ч, поэтому <code>к оплате = max(маш.-ч, 4)</code>. Четыре м³ грунта к аренде не применяются.</p>
+      <p class="muted">Стоимость по ФЕР можно считать по эксплуатации машин, а аренду показывать справочно — переключатель в «Цены и ресурсы».</p>
+    </details>
+  </section>
+
+  <!-- ===================== СМЕТА ===================== -->
+  <section class="panel panel-table">
+    <div class="panel-head panel-head-wrap">
+      <div>
+        <h2>Смета по сборникам ФЕР</h2>
+        <span class="panel-sub">объём вводится в натуральных единицах; наименования переносятся; таблица прокручивается вправо →</span>
+      </div>
+      <div class="table-legend">
+        <span><i class="dot dot-blue"></i> стоимость по ФЕР</span>
+        <span><i class="dot dot-green"></i> ФОТ по ставкам</span>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="estimate-table" id="estimate-table">
+        <thead>
+          <tr>
+            <th class="col-num">№</th>
+            <th class="col-code">Шифр</th>
+            <th class="col-name">Наименование работ и характеристика</th>
+            <th class="col-unit">Ед. изм.</th>
+            <th class="col-vol">Объём</th>
+            <th class="col-norm">Норма<br>чел.-ч/ед.</th>
+            <th class="col-coeff">Коэф.</th>
+            <th class="col-hours">Чел.-ч</th>
+            <th class="col-mhours">Маш.-ч</th>
+            <th class="col-mhours">Маш.-ч<br>к оплате</th>
+            <th class="col-cost">Стоимость ФЕР, ₽</th>
+            <th class="col-cost">ФОТ, ₽</th>
+            <th class="col-actions">Действия</th>
+          </tr>
+        </thead>
+        <tbody id="estimate-body"></tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" id="estimate-empty" hidden>
+      <p>Смета пока пуста.</p>
+      <button class="btn btn-primary" id="btn-empty-add">+ Добавить первую работу</button>
+    </div>
+
+    <div class="table-totals" id="estimate-totals" hidden>
+      <div><span>Прямые затраты</span><strong id="tot-direct">0 ₽</strong></div>
+      <div><span>Накладные расходы (НР)</span><strong id="tot-nr">0 ₽</strong></div>
+      <div><span>Сметная прибыль (СП)</span><strong id="tot-sp">0 ₽</strong></div>
+      <div><span>Аренда техники (справочно)</span><strong id="tot-rental">0 ₽</strong></div>
+      <div class="table-totals-main"><span>Итого по смете</span><strong id="tot-cost">0 ₽</strong></div>
+    </div>
+  </section>
+
+  <!-- ===================== СТРУКТУРА ===================== -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Структура сметы по сборникам</h2>
+      <span class="panel-sub">сколько работ и затрат в каждом разделе</span>
+    </div>
+    <div class="table-scroll">
+      <table class="breakdown-table">
+        <thead>
+          <tr>
+            <th>Сборник / раздел</th>
+            <th>Работ</th>
+            <th>Стоимость, ₽</th>
+            <th>ФОТ, ₽</th>
+            <th>Чел.-ч</th>
+            <th>Маш.-ч</th>
+            <th>Аренда, ₽</th>
+          </tr>
+        </thead>
+        <tbody id="breakdown-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="app-footer">
+    <p>Расценки ФЕР-2001: сборники 1, 6, 7, 8, 11, 12, 15 — ред. Приказа Минстроя № 876/пр (14.10.2021); сборники 16, 23 — официальная редакция 2001 г. Данные можно обновить из <code>data/*.json</code> или импортом JSON.</p>
+    <p>Проект не заменяет официальную смету: проверяйте объёмы, индексы и НР/СП по действующим нормативам.</p>
+  </footer>
+</main>
+
+<!-- ============================================================
+     МОДАЛКА: ДОБАВИТЬ РАБОТУ
+     ============================================================ -->
+<div class="modal" id="modal-add" aria-hidden="true">
+  <div class="modal-backdrop" data-close="modal-add"></div>
+  <div class="modal-window modal-window-wide" role="dialog" aria-modal="true" aria-labelledby="add-title">
+    <div class="modal-head">
+      <h2 id="add-title">Добавить работу в смету</h2>
+      <button class="modal-close" data-close="modal-add" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-toolbar">
+      <input type="search" id="add-search" class="search-input" placeholder="Поиск по шифру или наименованию…">
+      <select id="add-category" class="select-input"></select>
+      <label class="inline-field">
+        <span>Объём</span>
+        <input type="number" id="add-volume" min="0" step="any" placeholder="0" class="small-input">
+      </label>
+    </div>
+    <div class="modal-body">
+      <table class="directory-table">
+        <thead>
+          <tr>
+            <th>Шифр</th>
+            <th>Наименование работ</th>
+            <th>Ед. изм.</th>
+            <th>Норма чел.-ч</th>
+            <th>Цена ФЕР, ₽</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="add-body"></tbody>
+      </table>
+      <p class="modal-empty" id="add-empty" hidden>Ничего не найдено. Измените запрос или сборник.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     МОДАЛКА: СПРАВОЧНИК РАБОТ
+     ============================================================ -->
+<div class="modal" id="modal-directory" aria-hidden="true">
+  <div class="modal-backdrop" data-close="modal-directory"></div>
+  <div class="modal-window modal-window-wide" role="dialog" aria-modal="true" aria-labelledby="dir-title">
+    <div class="modal-head">
+      <h2 id="dir-title">Справочник работ ФЕР</h2>
+      <button class="modal-close" data-close="modal-directory" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-toolbar">
+      <input type="search" id="dir-search" class="search-input" placeholder="Поиск по шифру или наименованию…">
+      <select id="dir-category" class="select-input"></select>
+      <label class="inline-field">
+        <span>Объём</span>
+        <input type="number" id="dir-volume" min="0" step="any" placeholder="0" class="small-input">
+      </label>
+    </div>
+    <div class="modal-body">
+      <table class="directory-table">
+        <thead>
+          <tr>
+            <th>Шифр</th>
+            <th>Наименование работ</th>
+            <th>Ед. изм.</th>
+            <th>Норма чел.-ч</th>
+            <th>Прямые затраты, ₽</th>
+            <th>В том числе оплата труда, ₽</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="dir-body"></tbody>
+      </table>
+      <p class="modal-empty" id="dir-empty" hidden>Ничего не найдено.</p>
+    </div>
+    <div class="modal-foot modal-foot-note">
+      <span id="dir-count">0 работ</span>
+      <span>Источник: официальные сборники ФЕР-2001 (ссылки в «Обновить данные»).</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     МОДАЛКА: ЦЕНЫ И РЕСУРСЫ
+     ============================================================ -->
+<div class="modal" id="modal-resources" aria-hidden="true">
+  <div class="modal-backdrop" data-close="modal-resources"></div>
+  <div class="modal-window modal-window-wide modal-window-tall" role="dialog" aria-modal="true" aria-labelledby="res-title">
+    <div class="modal-head">
+      <h2 id="res-title">Цены и ресурсы</h2>
+      <button class="modal-close" data-close="modal-resources" aria-label="Закрыть">×</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="rates" role="tab">Ставки и индексы</button>
+      <button class="tab-btn" data-tab="prices" role="tab">Расценки ФЕР</button>
+      <button class="tab-btn" data-tab="machines" role="tab">Техника</button>
+      <button class="tab-btn" data-tab="coeffs" role="tab">Коэффициенты</button>
+    </div>
+    <div class="modal-body modal-body-tall">
+
+      <section class="tab-panel active" data-panel="rates">
+        <div class="form-grid">
+          <label class="field"><span>Ставка рабочего, ₽/чел.-ч</span><input type="number" id="rate-worker" step="1" min="0"></label>
+          <label class="field"><span>Ставка машиниста, ₽/маш.-ч</span><input type="number" id="rate-machinist" step="1" min="0"></label>
+          <label class="field"><span>Прораб, % от ФОТ</span><input type="number" id="rate-foreman" step="0.1" min="0"></label>
+          <label class="field"><span>Страховые взносы, %</span><input type="number" id="rate-insurance" step="0.1" min="0"></label>
+          <label class="field"><span>Базовая ставка машиниста ФЕР, ₽/чел.-ч</span><input type="number" id="rate-base-machinist" step="0.1" min="0.1"></label>
+          <label class="field"><span>Минимум аренды, маш.-ч</span><input type="number" id="rate-min-hours" step="1" min="0"></label>
+          <label class="field"><span>Смена, ч</span><input type="number" id="rate-shift" step="0.5" min="1"></label>
+          <label class="field"><span>НР, % от прямых затрат</span><input type="number" id="rate-nr" step="0.1" min="0"></label>
+          <label class="field"><span>СП, % от прямых затрат</span><input type="number" id="rate-sp" step="0.1" min="0"></label>
+          <label class="field"><span>Индекс оплаты труда</span><input type="number" id="idx-labor" step="0.01" min="0"></label>
+          <label class="field"><span>Индекс эксплуатации машин</span><input type="number" id="idx-machines" step="0.01" min="0"></label>
+          <label class="field"><span>Индекс материалов</span><input type="number" id="idx-materials" step="0.01" min="0"></label>
+        </div>
+        <label class="check-field">
+          <input type="checkbox" id="rate-use-rental">
+          <span>В итоговую стоимость включать аренду техники вместо эксплуатации машин по ФЕР</span>
+        </label>
+        <p class="hint-box">НР и СП здесь заданы в процентах от прямых затрат — это упрощение. Для официальной сметы подставьте нормативы по виду работ. Индексы пересчитывают цены 2001 года к текущему уровню.</p>
+      </section>
+
+      <section class="tab-panel" data-panel="prices">
+        <div class="modal-toolbar">
+          <input type="search" id="prices-search" class="search-input" placeholder="Поиск расценки…">
+          <select id="prices-category" class="select-input"></select>
+        </div>
+        <p class="hint-box">Цены и нормы можно править прямо в таблице. Изменения сохраняются и не сбрасывают строки сметы.</p>
+        <div class="table-scroll table-scroll-tall">
+          <table class="directory-table prices-table">
+            <thead>
+              <tr>
+                <th>Шифр</th>
+                <th>Наименование</th>
+                <th>Ед.</th>
+                <th>Прямые, ₽</th>
+                <th>Оплата труда, ₽</th>
+                <th>Машины, ₽</th>
+                <th>Машинист, ₽</th>
+                <th>Материалы, ₽</th>
+                <th>Норма чел.-ч</th>
+              </tr>
+            </thead>
+            <tbody id="prices-body"></tbody>
+          </table>
         </div>
       </section>
 
-      <section class="card progress-card">
-        <h2>Прогресс выполнения (этажи 1–9)</h2>
-        <div class="progress-overall">
-          <span>Общий прогресс:</span>
-          <div class="bar"><div id="progress-overall-fill" class="bar-fill"></div></div>
-          <span id="progress-overall-value" class="progress-value">0%</span>
+      <section class="tab-panel" data-panel="machines">
+        <div class="modal-toolbar">
+          <button class="btn btn-primary" id="btn-add-machine">+ Добавить технику</button>
+          <span class="muted">Ставка — стоимость аренды за 1 маш.-ч.</span>
         </div>
-        <div id="progress-list"></div>
+        <div class="table-scroll">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Аренда, ₽/маш.-ч</th>
+                <th>Машинист, ₽/маш.-ч</th>
+                <th>Примечание</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="machines-body"></tbody>
+          </table>
+        </div>
       </section>
+
+      <section class="tab-panel" data-panel="coeffs">
+        <div class="modal-toolbar">
+          <button class="btn btn-primary" id="btn-add-coeff">+ Добавить коэффициент</button>
+          <span class="muted">Коэффициент применяется к нормам и стоимости выбранной строки.</span>
+        </div>
+        <div class="table-scroll">
+          <table class="directory-table">
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Группа</th>
+                <th>Значение</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="coeffs-body"></tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
-
-  </main>
-
-  <!-- Модальное окно: справочник работ -->
-  <div id="modal-directory" class="modal hidden">
-    <div class="modal-box">
-      <div class="modal-head">
-        <h2>Справочник работ (ФЕР)</h2>
-        <button class="modal-close" data-close="modal-directory">×</button>
-      </div>
-      <div class="modal-toolbar">
-        <input id="dir-search" type="text" placeholder="Поиск по шифру или названию...">
-        <button id="btn-dir-add" class="btn btn-primary">+ Новая работа</button>
-      </div>
-      <div class="table-scroll">
-        <table class="estimate directory">
-          <thead>
-            <tr>
-              <th>Шифр</th>
-              <th>Наименование</th>
-              <th>Ед. изм.</th>
-              <th>Норма (чел.-ч)</th>
-              <th>Цена (₽)</th>
-              <th>Категория</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="directory-body"></tbody>
-        </table>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btn-reset-resources">Сбросить к исходным</button>
+      <div class="modal-foot-actions">
+        <button class="btn" data-close="modal-resources">Отмена</button>
+        <button class="btn btn-primary" id="btn-save-resources">Сохранить</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Модальное окно: коэффициенты -->
-  <div id="modal-coeff" class="modal hidden">
-    <div class="modal-box modal-sm">
-      <div class="modal-head">
-        <h2>Коэффициенты</h2>
-        <button class="modal-close" data-close="modal-coeff">×</button>
+<!-- ============================================================
+     МОДАЛКА: СТРОКА СМЕТЫ
+     ============================================================ -->
+<div class="modal" id="modal-row" aria-hidden="true">
+  <div class="modal-backdrop" data-close="modal-row"></div>
+  <div class="modal-window" role="dialog" aria-modal="true" aria-labelledby="row-title">
+    <div class="modal-head">
+      <h2 id="row-title">Строка сметы</h2>
+      <button class="modal-close" data-close="modal-row" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="row-modal-name" id="row-work-name">—</p>
+      <div class="form-grid form-grid-2">
+        <label class="field"><span>Объём, <span id="row-unit">ед.</span></span><input type="number" id="row-volume" min="0" step="any"></label>
+        <label class="field"><span>Коэффициент</span><select id="row-coeff" class="select-input"></select></label>
+        <label class="field"><span>Норма чел.-ч на единицу <em class="muted">(пусто = из ФЕР)</em></span><input type="number" id="row-norm" min="0" step="any" placeholder="из ФЕР"></label>
+        <label class="field"><span>Маш.-ч на единицу <em class="muted">(пусто = расчёт по ФЕР)</em></span><input type="number" id="row-mnorm" min="0" step="any" placeholder="расчёт"></label>
+        <label class="field"><span>Свой коэффициент <em class="muted">(перекрывает выбор)</em></span><input type="number" id="row-custom-coeff" min="0" step="0.01" placeholder="нет"></label>
       </div>
-      <div class="modal-toolbar">
-        <button id="btn-coeff-add" class="btn btn-primary">+ Новый коэффициент</button>
-      </div>
-      <div class="table-scroll">
-        <table class="estimate coefficients">
-          <thead>
-            <tr>
-              <th>Название</th>
-              <th>Значение</th>
-              <th>Группа</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="coeff-body"></tbody>
-        </table>
+      <div class="row-modal-preview" id="row-preview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger-ghost" id="btn-row-delete">Удалить строку</button>
+      <div class="modal-foot-actions">
+        <button class="btn" data-close="modal-row">Отмена</button>
+        <button class="btn btn-primary" id="btn-row-save">Применить</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Модальное окно: выбор работы для добавления -->
-  <div id="modal-pick" class="modal hidden">
-    <div class="modal-box">
-      <div class="modal-head">
-        <h2>Добавить работу</h2>
-        <button class="modal-close" data-close="modal-pick">×</button>
+<!-- ============================================================
+     МОДАЛКА: ОБНОВИТЬ ДАННЫЕ
+     ============================================================ -->
+<div class="modal" id="modal-data" aria-hidden="true">
+  <div class="modal-backdrop" data-close="modal-data"></div>
+  <div class="modal-window modal-window-wide" role="dialog" aria-modal="true" aria-labelledby="data-title">
+    <div class="modal-head">
+      <h2 id="data-title">Обновить данные с официальных источников</h2>
+      <button class="modal-close" data-close="modal-data" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="data-status">
+        <div>
+          <div class="stat-label">Версия данных</div>
+          <div class="data-status-value" id="data-updated">—</div>
+        </div>
+        <div>
+          <div class="stat-label">Работ в справочнике</div>
+          <div class="data-status-value" id="data-works-count">0</div>
+        </div>
+        <div>
+          <div class="stat-label">Источников</div>
+          <div class="data-status-value" id="data-sources-count">0</div>
+        </div>
       </div>
-      <div class="modal-toolbar">
-        <input id="pick-search" type="text" placeholder="Поиск по шифру или названию...">
-        <select id="pick-category"></select>
+
+      <p class="hint-box">
+        Кнопка ниже перечитывает <code>data/works.json</code>, <code>data/rates.json</code>,
+        <code>data/coefficients.json</code> и <code>data/meta.json</code> из папки проекта.
+        Строки сметы, объёмы и ваши правки ставок сохраняются.
+      </p>
+
+      <div class="data-actions">
+        <button class="btn btn-primary" id="btn-fetch-data">↻ Обновить из data/*.json</button>
+        <button class="btn" id="btn-import-data">Импортировать JSON</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
       </div>
-      <div class="table-scroll">
-        <table class="estimate directory">
-          <thead>
-            <tr>
-              <th>Шифр</th>
-              <th>Наименование</th>
-              <th>Ед. изм.</th>
-              <th>Норма</th>
-              <th>Цена</th>
-            </tr>
-          </thead>
-          <tbody id="pick-body"></tbody>
-        </table>
+
+      <p class="hint-box hint-warn">
+        Прямая загрузка с rags.ru из браузера блокируется политикой CORS. Поэтому официальные тексты
+        открываются по ссылкам, а обновление в приложении идёт из локальных JSON-файлов проекта.
+        Для актуализации скачайте свежие сборники с rags.ru или ФГИС ЦС и замените <code>data/*.json</code>.
+      </p>
+
+      <h3 class="data-subtitle">Официальные источники</h3>
+      <ul class="source-list" id="data-sources"></ul>
+    </div>
+    <div class="modal-foot">
+      <span class="muted" id="data-message"></span>
+      <div class="modal-foot-actions">
+        <a class="btn" href="https://fgiscs.minstroyrf.ru/frsn/fsnb" target="_blank" rel="noopener">ФГИС ЦС ↗</a>
+        <button class="btn" data-close="modal-data">Закрыть</button>
       </div>
     </div>
   </div>
+</div>
 
-  <script src="script.js"></script>
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script src="data-embedded.js"></script>
+<script src="calc.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
